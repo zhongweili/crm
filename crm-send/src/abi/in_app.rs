@@ -34,21 +34,3 @@ impl From<InAppMessage> for SendRequest {
         }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use uuid::Uuid;
-
-    use crate::pb::InAppMessage;
-
-    impl InAppMessage {
-        pub fn fake() -> Self {
-            InAppMessage {
-                message_id: Uuid::new_v4().to_string(),
-                device_id: Uuid::new_v4().to_string(),
-                title: "Test Title".to_string(),
-                body: "Test Body".to_string(),
-            }
-        }
-    }
-}

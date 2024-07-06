@@ -1,6 +1,7 @@
 use chrono::{DateTime, TimeZone, Utc};
 use prost_types::Timestamp;
 use tonic::{Response, Status};
+use tracing::info;
 
 use crate::{
     pb::{QueryRequest, RawQueryRequest, User},
@@ -32,6 +33,9 @@ impl UserStatsService {
             sql.push_str(" AND ");
             sql.push_str(&id_conditions);
         }
+
+        info!("Generated SQL: {}", sql);
+
         self.raw_query(RawQueryRequest { query: sql }).await
     }
 
@@ -90,7 +94,10 @@ fn ts_to_utc(ts: &Timestamp) -> DateTime<Utc> {
 #[cfg(test)]
 mod test {
 
-    use crate::pb::{IdQuery, QueryRequestBuilder, TimeQuery};
+    use crate::{
+        pb::QueryRequestBuilder,
+        test_utils::{id, tq},
+    };
 
     use super::*;
     use anyhow::Result;
@@ -98,7 +105,7 @@ mod test {
 
     #[tokio::test]
     async fn raw_query_should_work() -> Result<()> {
-        let service = UserStatsService::new().await;
+        let (_tpg, service) = UserStatsService::new_for_test().await?;
         let req = RawQueryRequest {
             query: "SELECT * FROM user_stats WHERE created_at > '2024-01-01' limit 5".to_string(),
         };
@@ -115,7 +122,7 @@ mod test {
 
     #[tokio::test]
     async fn query_should_work() -> Result<()> {
-        let service = UserStatsService::new().await;
+        let (_tpg, service) = UserStatsService::new_for_test().await?;
         let query = QueryRequestBuilder::default()
             .timestamp(("created_at".to_string(), tq(Some(120), None)))
             .timestamp(("last_visited_at".to_string(), tq(Some(30), None)))
@@ -130,28 +137,7 @@ mod test {
                 Err(e) => eprintln!("Error: {:?}", e),
             }
         }
+
         Ok(())
-    }
-
-    pub fn tq(lower: Option<i64>, upper: Option<i64>) -> TimeQuery {
-        TimeQuery {
-            lower: lower.map(to_ts),
-            upper: upper.map(to_ts),
-        }
-    }
-
-    pub fn to_ts(days: i64) -> Timestamp {
-        let dt = Utc
-            .with_ymd_and_hms(2024, 5, 7, 0, 0, 0)
-            .unwrap()
-            .checked_sub_signed(chrono::Duration::days(days))
-            .unwrap();
-        Timestamp {
-            seconds: dt.timestamp(),
-            nanos: dt.timestamp_subsec_nanos() as i32,
-        }
-    }
-    pub fn id(id: &[u32]) -> IdQuery {
-        IdQuery { ids: id.to_vec() }
     }
 }

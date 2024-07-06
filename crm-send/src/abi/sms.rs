@@ -34,22 +34,3 @@ impl From<SmsMessage> for SendRequest {
         }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use fake::{faker::phone_number::en::PhoneNumber, Fake};
-    use uuid::Uuid;
-
-    use crate::pb::SmsMessage;
-
-    impl SmsMessage {
-        pub fn fake() -> Self {
-            SmsMessage {
-                message_id: Uuid::new_v4().to_string(),
-                sender: PhoneNumber().fake(),
-                recipients: vec![PhoneNumber().fake()],
-                body: "Test Body".to_string(),
-            }
-        }
-    }
-}

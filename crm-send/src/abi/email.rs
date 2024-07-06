@@ -35,23 +35,3 @@ impl From<EmailMessage> for SendRequest {
         }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use fake::{faker::internet::en::SafeEmail, Fake};
-    use uuid::Uuid;
-
-    use crate::pb::EmailMessage;
-
-    impl EmailMessage {
-        pub fn fake() -> Self {
-            EmailMessage {
-                message_id: Uuid::new_v4().to_string(),
-                sender: SafeEmail().fake(),
-                recipients: vec![SafeEmail().fake()],
-                subject: "Test Subject".to_string(),
-                body: "Test Body".to_string(),
-            }
-        }
-    }
-}

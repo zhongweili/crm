@@ -38,3 +38,48 @@ impl Notification for NotificationService {
         self.send(stream).await
     }
 }
+
+#[cfg(feature = "test_utils")]
+mod test_utils {
+    use fake::{
+        faker::{internet::en::SafeEmail, phone_number::en::PhoneNumber},
+        Fake,
+    };
+    use uuid::Uuid;
+
+    use crate::pb::{EmailMessage, InAppMessage, SmsMessage};
+
+    impl EmailMessage {
+        pub fn fake() -> Self {
+            EmailMessage {
+                message_id: Uuid::new_v4().to_string(),
+                sender: SafeEmail().fake(),
+                recipients: vec![SafeEmail().fake()],
+                subject: "Test Subject".to_string(),
+                body: "Test Body".to_string(),
+            }
+        }
+    }
+
+    impl SmsMessage {
+        pub fn fake() -> Self {
+            SmsMessage {
+                message_id: Uuid::new_v4().to_string(),
+                sender: PhoneNumber().fake(),
+                recipients: vec![PhoneNumber().fake()],
+                body: "Test Body".to_string(),
+            }
+        }
+    }
+
+    impl InAppMessage {
+        pub fn fake() -> Self {
+            InAppMessage {
+                message_id: Uuid::new_v4().to_string(),
+                device_id: Uuid::new_v4().to_string(),
+                title: "Test Title".to_string(),
+                body: "Test Body".to_string(),
+            }
+        }
+    }
+}
