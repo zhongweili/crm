@@ -1,8 +1,10 @@
 use anyhow::Result;
-use crm::pb::crm_client::CrmClient;
-use crm::pb::WelcomeRequestBuilder;
-use tonic::transport::{Certificate, Channel, ClientTlsConfig};
-use tonic::Request;
+use crm::pb::{crm_client::CrmClient, WelcomeRequestBuilder};
+use tonic::{
+    metadata::MetadataValue,
+    transport::{Certificate, Channel, ClientTlsConfig},
+    Request,
+};
 use uuid::Uuid;
 
 #[tokio::main]
@@ -16,16 +18,21 @@ async fn main() -> Result<()> {
         .connect()
         .await?;
 
-    let mut client = CrmClient::new(channel);
+    let token = include_str!("../../fixtures/token").trim();
+    let token: MetadataValue<_> = format!("Bearer {}", token).parse()?;
+
+    let mut client = CrmClient::with_interceptor(channel, move |mut req: Request<()>| {
+        req.metadata_mut().insert("authorization", token.clone());
+        Ok(req)
+    });
 
     let req = WelcomeRequestBuilder::default()
         .id(Uuid::new_v4().to_string())
-        .interval(7u32)
+        .interval(93u32)
         .content_ids([1u32, 2, 3])
         .build()?;
 
     let response = client.welcome(Request::new(req)).await?.into_inner();
-    println!("Received response: {:?}", response);
-
+    println!("Response: {:?}", response);
     Ok(())
 }

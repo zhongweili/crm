@@ -1,3 +1,5 @@
+pub mod auth;
+
 use crate::{
     pb::{WelcomeRequest, WelcomeResponse},
     CrmService,
@@ -15,6 +17,7 @@ use user_stat::pb::QueryRequest;
 
 impl CrmService {
     pub async fn welcome(&self, req: WelcomeRequest) -> Result<Response<WelcomeResponse>, Status> {
+        let request_id = req.id;
         let d1 = Utc::now() - Duration::days(req.interval as _);
         let d2 = d1 + Duration::days(1);
         let query = QueryRequest::new_with_dt("created_at", d1, d2);
@@ -63,6 +66,6 @@ impl CrmService {
 
         self.notification.clone().send(reqs).await?;
 
-        Ok(Response::new(WelcomeResponse { id: req.id }))
+        Ok(Response::new(WelcomeResponse { id: request_id }))
     }
 }

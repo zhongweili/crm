@@ -29,6 +29,7 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 user-stat = { workspace = true }
 uuid = { version = "1.8.0", features = ["v4"] }
+jwt-simple = "0.12.9"
 
 
 [build-dependencies]
