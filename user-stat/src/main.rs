@@ -1,7 +1,7 @@
 use anyhow::Result;
 use tracing::{info, level_filters::LevelFilter};
 use tracing_subscriber::{fmt::Layer, layer::SubscriberExt, util::SubscriberInitExt, Layer as _};
-use user_stat::UserStatsService;
+use user_stat::{AppConfig, UserStatsService};
 
 use tonic::transport::Server;
 
@@ -9,11 +9,13 @@ use tonic::transport::Server;
 async fn main() -> Result<()> {
     let layer = Layer::new().with_filter(LevelFilter::INFO);
     tracing_subscriber::registry().with(layer).init();
-    let addr = "[::1]:50051".parse()?;
 
-    info!("UserService listening on {}", addr);
+    let config = AppConfig::load().expect("Failed to load config");
+    let addr = config.server.port;
+    let addr = format!("[::1]:{}", addr).parse().unwrap();
+    info!("user stats service listening on {}", addr);
 
-    let svc = UserStatsService::new().await.into_server();
+    let svc = UserStatsService::new(config).await.into_server();
     Server::builder().add_service(svc).serve(addr).await?;
     Ok(())
 }

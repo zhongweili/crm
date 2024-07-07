@@ -5,12 +5,14 @@ resolver = "2"
 [workspace.dependencies]
 anyhow = "1.0.86"
 chrono = { version = "0.4.38", features = ["serde"] }
+crm-metadata = { path = "crm-metadata" }
 crm-send = { path = "crm-send" }
 derive_builder = "0.20.0"
 futures = "0.3.30"
 prost = "0.12.6"
 prost-build = "0.12.6"
 prost-types = "0.12.6"
+proto-builder-trait = "0.6.1"
 rand = "0.8.5"
 serde = "1.0.203"
 serde_yaml = "0.9.34"

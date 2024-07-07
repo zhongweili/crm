@@ -36,9 +36,8 @@ async fn raw_query_should_work() -> Result<()> {
 }
 
 #[tokio::test]
-async fn query_should_work() -> Result<()> {
+async fn query_should_work1() -> Result<()> {
     let (_tpg, addr) = start_server(PORT_BASE + 1).await?;
-
     let mut client = UserStatsClient::connect(format!("http://{addr}")).await?;
 
     let query = QueryRequestBuilder::default()

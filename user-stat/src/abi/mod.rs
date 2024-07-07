@@ -4,7 +4,7 @@ use tonic::{Response, Status};
 use tracing::info;
 
 use crate::{
-    pb::{QueryRequest, RawQueryRequest, User},
+    pb::{QueryRequest, QueryRequestBuilder, RawQueryRequest, TimeQuery, User},
     ResponseStream, ServiceResult, UserStatsService,
 };
 
@@ -53,6 +53,28 @@ impl UserStatsService {
         Ok(Response::new(Box::pin(futures::stream::iter(
             ret.into_iter().map(Ok),
         ))))
+    }
+}
+
+impl QueryRequest {
+    pub fn new_with_dt(name: &str, lower: DateTime<Utc>, upper: DateTime<Utc>) -> Self {
+        let ts = Timestamp {
+            seconds: lower.timestamp(),
+            nanos: 0,
+        };
+        let ts1 = Timestamp {
+            seconds: upper.timestamp(),
+            nanos: 0,
+        };
+        let tq = TimeQuery {
+            lower: Some(ts),
+            upper: Some(ts1),
+        };
+
+        QueryRequestBuilder::default()
+            .timestamp((name.to_string(), tq))
+            .build()
+            .expect("Failed to build query request")
     }
 }
 

@@ -45,8 +45,7 @@ impl UserStats for UserStatsService {
 }
 
 impl UserStatsService {
-    pub async fn new() -> Self {
-        let config = AppConfig::load().expect("failed to load config");
+    pub async fn new(config: AppConfig) -> Self {
         let pool = PgPool::connect(&config.server.db_url)
             .await
             .expect("failed to connect to db");
