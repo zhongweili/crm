@@ -32,7 +32,7 @@ uuid = { version = "1.9.1", features = ["v4"] }
 [build-dependencies]
 anyhow.workspace = true
 tonic-build = { workspace = true }
-proto-builder-trait = "0.6.1"
+proto-builder-trait = { workspace = true }
 
 [dev-dependencies]
 crm-send = { workspace = true, features = ["test_utils"]}

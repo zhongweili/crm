@@ -36,7 +36,7 @@ async fn raw_query_should_work() -> Result<()> {
 }
 
 #[tokio::test]
-async fn query_should_work1() -> Result<()> {
+async fn query_should_work() -> Result<()> {
     let (_tpg, addr) = start_server(PORT_BASE + 1).await?;
     let mut client = UserStatsClient::connect(format!("http://{addr}")).await?;
 
@@ -55,6 +55,10 @@ async fn query_should_work1() -> Result<()> {
         .await;
 
     assert!(!res.is_empty());
+    assert!(res[0].contents.contains_key("viewed_but_not_started"));
+
+    let ids = &res[0].contents.get("viewed_but_not_started").unwrap().ids;
+    assert!(ids.contains(&252790));
 
     Ok(())
 }

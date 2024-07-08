@@ -1,17 +1,20 @@
 pub mod auth;
 
 use crate::{
-    pb::{RecallRequest, RecallResponse, WelcomeRequest, WelcomeResponse},
+    pb::{
+        RecallRequest, RecallResponse, RemindRequest, RemindResponse, WelcomeRequest,
+        WelcomeResponse,
+    },
     CrmService,
 };
 use chrono::{Duration, Utc};
-use crm_metadata::pb::{Content, MaterializeRequest};
+use crm_metadata::pb::{metadata_client::MetadataClient, Content, MaterializeRequest};
 use crm_send::pb::SendRequest;
 use futures::StreamExt;
 use std::sync::Arc;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
-use tonic::{Response, Status};
+use tonic::{transport::Channel, Response, Status};
 use tracing::warn;
 use user_stat::pb::QueryRequest;
 
@@ -23,18 +26,7 @@ impl CrmService {
         let query = QueryRequest::new_with_dt("created_at", d1, d2);
         let mut res_user_stats = self.user_stats.clone().query(query).await?.into_inner();
 
-        let contents = self
-            .metadata
-            .clone()
-            .materialize(MaterializeRequest::new_with_ids(&req.content_ids))
-            .await?
-            .into_inner();
-
-        let contents: Vec<Content> = contents
-            .filter_map(|v| async move { v.ok() })
-            .collect()
-            .await;
-        let contents = Arc::new(contents);
+        let contents = get_contents_by_id(self.metadata.clone(), &req.content_ids).await?;
 
         let (tx, rx) = mpsc::channel(1024);
 
@@ -72,22 +64,11 @@ impl CrmService {
     pub async fn recall(&self, req: RecallRequest) -> Result<Response<RecallResponse>, Status> {
         let request_id = req.id;
         let d1 = Utc::now() - Duration::days(req.last_visit_interval as _);
-        let d2 = d1 + Duration::days(1);
+        let d2 = Utc::now();
         let query = QueryRequest::new_with_dt("last_visited_at", d1, d2);
         let mut res_user_stats = self.user_stats.clone().query(query).await?.into_inner();
 
-        let contents = self
-            .metadata
-            .clone()
-            .materialize(MaterializeRequest::new_with_ids(&req.content_ids))
-            .await?
-            .into_inner();
-
-        let contents: Vec<Content> = contents
-            .filter_map(|v| async move { v.ok() })
-            .collect()
-            .await;
-        let contents = Arc::new(contents);
+        let contents = get_contents_by_id(self.metadata.clone(), &req.content_ids).await?;
 
         let (tx, rx) = mpsc::channel(1024);
 
@@ -110,4 +91,68 @@ impl CrmService {
 
         Ok(Response::new(RecallResponse { id: request_id }))
     }
+
+    pub async fn remind(&self, req: RemindRequest) -> Result<Response<RemindResponse>, Status> {
+        let request_id = req.id;
+        let d1 = Utc::now() - Duration::days(req.last_visit_interval as _);
+        let d2 = Utc::now();
+        let query = QueryRequest::new_with_dt("last_visited_at", d1, d2);
+        let mut res_user_stats = self.user_stats.clone().query(query).await?.into_inner();
+        let (tx, rx) = mpsc::channel(1024);
+
+        let metadata = self.metadata.clone();
+        let sender = self.config.server.sender_email.clone();
+        tokio::spawn(async move {
+            while let Some(Ok(user)) = res_user_stats.next().await {
+                if let Some(started_but_not_finished_contents) =
+                    user.contents.get("started_but_not_finished")
+                {
+                    match get_contents_by_id(
+                        metadata.clone(),
+                        &started_but_not_finished_contents.ids,
+                    )
+                    .await
+                    {
+                        Ok(contents) => {
+                            let req = SendRequest::new(
+                                "Remind".to_string(),
+                                sender.clone(),
+                                &[user.email],
+                                &contents,
+                            );
+                            if let Err(e) = tx.send(req).await {
+                                warn!("Failed to send message: {:?}", e);
+                            }
+                        }
+                        Err(e) => {
+                            warn!("Failed to materialize contents: {:?}", e);
+                        }
+                    }
+                }
+            }
+        });
+        let reqs = ReceiverStream::new(rx);
+
+        self.notification.clone().send(reqs).await?;
+
+        Ok(Response::new(RemindResponse { id: request_id }))
+    }
+}
+
+async fn get_contents_by_id(
+    metadata: MetadataClient<Channel>,
+    ids: &[u32],
+) -> Result<Arc<Vec<Content>>, Status> {
+    let contents = metadata
+        .clone()
+        .materialize(MaterializeRequest::new_with_ids(ids))
+        .await?
+        .into_inner();
+
+    let contents: Vec<Content> = contents
+        .filter_map(|v| async move { v.ok() })
+        .collect()
+        .await;
+    let contents = Arc::new(contents);
+    Ok(contents)
 }

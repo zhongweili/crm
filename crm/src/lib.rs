@@ -50,9 +50,11 @@ impl Crm for CrmService {
 
     async fn remind(
         &self,
-        _request: Request<RemindRequest>,
+        request: Request<RemindRequest>,
     ) -> Result<Response<RemindResponse>, Status> {
-        todo!()
+        let user: &auth::User = request.extensions().get().unwrap();
+        info!("User: {:?}", user);
+        self.remind(request.into_inner()).await
     }
 }
 
