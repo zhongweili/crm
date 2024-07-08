@@ -48,7 +48,7 @@ impl UserStatsService {
         }
 
         // the result list is too long, limit the result for convenience.
-        sql.push_str(" LIMIT 100");
+        // sql.push_str(" LIMIT 100");
 
         info!("Generated SQL: {}", sql);
 

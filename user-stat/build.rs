@@ -13,7 +13,6 @@ fn main() -> Result<()> {
             true,
             Some(&[r#"#[serde(rename_all = "camelCase")]"#]),
         )
-        // .with_sqlx_from_row(&["User"], None)
         .with_derive_builder(
             &[
                 "User",
@@ -46,10 +45,6 @@ fn main() -> Result<()> {
             &["QueryRequest.ids"],
             &[r#"#[builder(setter(each(name="id", into)))]"#],
         )
-        // .with_field_attributes(
-        //     &["User.contents"],
-        //     &[r#"#[builder(setter(each(name="id", into)))]"#],
-        // )
         .compile(
             &[
                 "../protos/user-stats/messages.proto",
