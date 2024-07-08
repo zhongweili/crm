@@ -10,7 +10,8 @@ pub struct AppConfig {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AuthConfig {
-    pub pk: String,
+    pub ek: String,
+    pub dk: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

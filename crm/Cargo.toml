@@ -9,7 +9,11 @@ path = "src/server.rs"
 
 [[bin]]
 name = "client"
-path= "src/client.rs"
+path = "src/client.rs"
+
+[[bin]]
+name = "gen_token"
+path = "src/gen_token.rs"
 
 [dependencies]
 anyhow.workspace = true

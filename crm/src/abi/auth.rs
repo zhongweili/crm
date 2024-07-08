@@ -1,7 +1,8 @@
-use chrono::{DateTime, Utc};
 use jwt_simple::prelude::*;
 use tonic::{service::Interceptor, Request, Status};
 use tracing::info;
+
+pub struct EncodingKey(Ed25519KeyPair);
 
 #[derive(Debug, Clone)]
 pub struct DecodingKey(Ed25519PublicKey);
@@ -9,17 +10,25 @@ pub struct DecodingKey(Ed25519PublicKey);
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct User {
     pub id: i64,
-    pub ws_id: i64,
     pub fullname: String,
     pub email: String,
-    #[serde(skip)]
-    pub password_hash: Option<String>,
-    pub created_at: DateTime<Utc>,
 }
 
-// const JWT_DURATION: u64 = 60 * 60 * 24 * 7;
-const JWT_ISS: &str = "chat_server";
-const JWT_AUD: &str = "chat_web";
+const JWT_DURATION: u64 = 60 * 60 * 24 * 7;
+const JWT_ISS: &str = "crm";
+const JWT_AUD: &str = "crm_client";
+
+impl EncodingKey {
+    pub fn load(pem: &str) -> Result<Self, jwt_simple::Error> {
+        Ok(Self(Ed25519KeyPair::from_pem(pem)?))
+    }
+
+    pub fn sign(&self, user: impl Into<User>) -> Result<String, jwt_simple::Error> {
+        let claims = Claims::with_custom_claims(user.into(), Duration::from_secs(JWT_DURATION));
+        let claims = claims.with_issuer(JWT_ISS).with_audience(JWT_AUD);
+        self.0.sign(claims)
+    }
+}
 
 impl DecodingKey {
     pub fn load(pem: &str) -> Result<Self, jwt_simple::Error> {
@@ -59,5 +68,15 @@ impl Interceptor for DecodingKey {
 
         req.extensions_mut().insert(user);
         Ok(req)
+    }
+}
+
+impl User {
+    pub fn new(id: i64, fullname: String, email: String) -> Self {
+        Self {
+            id,
+            fullname,
+            email,
+        }
     }
 }

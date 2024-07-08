@@ -1,4 +1,4 @@
-mod abi;
+pub mod abi;
 mod config;
 
 pub mod pb;
@@ -70,7 +70,7 @@ impl CrmService {
     pub fn into_server(
         self,
     ) -> Result<InterceptedService<CrmServer<CrmService>, auth::DecodingKey>> {
-        let dk = auth::DecodingKey::load(&self.config.auth.pk)?;
+        let dk = auth::DecodingKey::load(&self.config.auth.dk)?;
         Ok(CrmServer::with_interceptor(self, dk))
     }
 }
