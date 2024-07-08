@@ -1,5 +1,5 @@
 use anyhow::Result;
-use crm::pb::{crm_client::CrmClient, WelcomeRequestBuilder};
+use crm::pb::{crm_client::CrmClient, RecallRequestBuilder, WelcomeRequestBuilder};
 use tonic::{
     metadata::MetadataValue,
     transport::{Certificate, Channel, ClientTlsConfig},
@@ -26,13 +26,29 @@ async fn main() -> Result<()> {
         Ok(req)
     });
 
-    let req = WelcomeRequestBuilder::default()
+    let req_of_welcome = WelcomeRequestBuilder::default()
         .id(Uuid::new_v4().to_string())
         .interval(98u32)
         .content_ids([1u32, 2, 3])
         .build()?;
 
-    let response = client.welcome(Request::new(req)).await?.into_inner();
-    println!("Response: {:?}", response);
+    let resp_of_welcome = client
+        .welcome(Request::new(req_of_welcome))
+        .await?
+        .into_inner();
+    println!("Response of welcome: {:?}", resp_of_welcome);
+
+    let req_of_recall = RecallRequestBuilder::default()
+        .id(Uuid::new_v4().to_string())
+        .last_visit_interval(37u32)
+        .content_ids([1u32, 2, 3])
+        .build()?;
+
+    let resp_of_recall = client
+        .recall(Request::new(req_of_recall))
+        .await?
+        .into_inner();
+    println!("Response of recall: {:?}", resp_of_recall);
+
     Ok(())
 }

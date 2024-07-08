@@ -34,6 +34,8 @@ impl UserStatsService {
             sql.push_str(&id_conditions);
         }
 
+        sql.push_str(" LIMIT 100");
+
         info!("Generated SQL: {}", sql);
 
         self.raw_query(RawQueryRequest { query: sql }).await

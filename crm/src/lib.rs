@@ -41,9 +41,11 @@ impl Crm for CrmService {
 
     async fn recall(
         &self,
-        _request: Request<RecallRequest>,
+        request: Request<RecallRequest>,
     ) -> Result<Response<RecallResponse>, Status> {
-        todo!()
+        let user: &auth::User = request.extensions().get().unwrap();
+        info!("User: {:?}", user);
+        self.recall(request.into_inner()).await
     }
 
     async fn remind(
